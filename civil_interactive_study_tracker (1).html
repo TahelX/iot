@@ -1,0 +1,454 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.wrap { padding: 0.5rem 0 1rem; }
+
+.sem-tabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 0 10px; }
+.sem-tab { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 20px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
+.sem-tab.active { color: #fff; }
+.sem-tab:not(.active) { background: var(--color-background-secondary); color: var(--color-text-secondary); border-color: var(--color-border-tertiary); }
+.s2 { background:#1B4F72; border-color:#1B4F72; }
+.s3 { background:#1A5276; border-color:#1A5276; }
+.s4 { background:#145A32; border-color:#145A32; }
+.s5 { background:#512E5F; border-color:#512E5F; }
+.s2i { border-color:#1B4F72; color:#1B4F72 !important; }
+.s3i { border-color:#1A5276; color:#1A5276 !important; }
+.s4i { border-color:#145A32; color:#145A32 !important; }
+.s5i { border-color:#512E5F; color:#512E5F !important; }
+
+.sem-section { display: none; }
+.sem-section.active { display: block; }
+
+.subject-block { margin-bottom: 1.4rem; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.subject-header { padding: 0.65rem 1rem; background: var(--color-background-secondary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+.subject-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.subject-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+
+.score-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; transition: all 0.3s; }
+.score-fail { background:#FCEBEB; color:#791F1F; }
+.score-pass { background:#EAF3DE; color:#27500A; }
+@media (prefers-color-scheme: dark) {
+  .score-fail { background:#791F1F; color:#F7C1C1; }
+  .score-pass { background:#27500A; color:#C0DD97; }
+}
+
+.chart-area { padding: 0.8rem 0.75rem 0.4rem; }
+.bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; border-radius: 6px; padding: 2px 4px; transition: background 0.1s; }
+.bar-row:hover { background: var(--color-background-secondary); }
+.bar-row.done { opacity: 1; }
+
+.ch-check { width: 18px; height: 18px; min-width: 18px; border-radius: 4px; border: 1.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 11px; cursor: pointer; }
+.ch-check.checked { background: #1D9E75; border-color: #1D9E75; color: white; }
+
+.ch-label { font-size: 11px; color: var(--color-text-secondary); width: 170px; min-width: 170px; text-align: right; line-height: 1.3; transition: color 0.2s; }
+.bar-row.done .ch-label { color: var(--color-text-primary); font-weight: 500; }
+
+.bar-outer { flex: 1; height: 22px; background: var(--color-background-secondary); border-radius: 5px; position: relative; overflow: visible; }
+.bar-fill { height: 100%; border-radius: 5px; transition: opacity 0.2s; }
+.bar-row:not(.done) .bar-fill { opacity: 0.35; }
+.bar-row.done .bar-fill { opacity: 1; }
+
+.bar-val { font-size: 11px; font-weight: 500; min-width: 22px; text-align: center; color: var(--color-text-primary); }
+.diff-tag { font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 20px; white-space: nowrap; min-width: 68px; text-align: center; }
+.easy   { background:#EAF3DE; color:#27500A; }
+.star   { background:#EEEDFE; color:#3C3489; }
+.medium { background:#FAEEDA; color:#633806; }
+.hard   { background:#FCEBEB; color:#791F1F; }
+@media (prefers-color-scheme: dark) {
+  .easy   { background:#27500A; color:#C0DD97; }
+  .star   { background:#3C3489; color:#CECBF6; }
+  .medium { background:#633806; color:#FAC775; }
+  .hard   { background:#791F1F; color:#F7C1C1; }
+}
+
+.pass-line { position:absolute; top:-4px; bottom:-4px; width:2.5px; border-radius:2px; z-index:10; pointer-events:none; transition: left 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.pass-line-label { position:absolute; top:-18px; transform:translateX(-50%); font-size:8px; font-weight:600; white-space:nowrap; background:var(--color-background-primary); padding:1px 3px; border-radius:3px; }
+
+.divider-row { display: flex; align-items: center; gap: 6px; margin: 1px 0 1px 204px; }
+.divider-line { flex:1; border-top: 1px dashed var(--color-border-secondary); }
+.divider-lbl { font-size: 10px; color: var(--color-text-tertiary); font-weight: 500; white-space: nowrap; }
+
+.progress-bar-wrap { height: 5px; background: var(--color-background-secondary); }
+.progress-bar-fill { height: 100%; background: #1D9E75; transition: width 0.4s ease; }
+
+.footer-row { padding: 0.5rem 0.75rem; background: var(--color-background-secondary); border-top: 0.5px solid var(--color-border-tertiary); font-size: 11px; color: var(--color-text-secondary); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.footer-row b { color: var(--color-text-primary); font-weight: 600; }
+.tip-row { padding: 5px 10px; font-size: 11px; font-weight: 500; color: #27500A; border-top: 0.5px solid var(--color-border-tertiary); }
+.tip-green { background: #EAF3DE; }
+.tip-pass  { background: #d4edda; }
+@media (prefers-color-scheme: dark) {
+  .tip-row { color: #b8d98a; }
+  .tip-green { background: #1a3306; }
+  .tip-pass  { background: #0f3320; }
+}
+
+.legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 0 0 10px; font-size: 11px; color: var(--color-text-secondary); align-items: center; }
+.leg-item { display: flex; align-items: center; gap: 4px; }
+.leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+.hint { font-size: 10px; color: var(--color-text-tertiary); font-style: italic; }
+</style>
+
+<div class="wrap">
+<div class="legend">
+  <span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>Easy</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#7F77DD"></span>★ Best ROI</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#BA7517"></span>Medium</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#E24B4A"></span>Hard</span>
+  <span class="hint">· Tap a chapter to mark as done — pass line updates live!</span>
+</div>
+
+<div class="sem-tabs">
+  <div class="sem-tab s2 active" onclick="showSem('s2',this)">2nd Semester</div>
+  <div class="sem-tab s3i" onclick="showSem('s3',this)">3rd Semester</div>
+  <div class="sem-tab s4i" onclick="showSem('s4',this)">4th Semester</div>
+  <div class="sem-tab s5i" onclick="showSem('s5',this)">5th Semester</div>
+</div>
+
+<div id="sem-container"></div>
+</div>
+
+<script>
+const DATA = {
+  s2: {
+    subjects: [
+      { id:'m2', title:'Mathematics-II (BS-201)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Group B = 5 free marks (just formulas). Groups A are manageable. Calculus = 45 marks but very heavy.',
+        chapters:[
+          {name:'Group B  Statistics (Mean/Mode)', marks:5, diff:'easy'},
+          {name:'Group A1  Co-ordinate Geom 2D', marks:10, diff:'medium'},
+          {name:'Group A2  Co-ordinate Geom 3D', marks:10, diff:'medium'},
+          {name:'Group D  Integral Calculus', marks:20, diff:'hard'},
+          {name:'Group C  Differential Calculus', marks:25, diff:'hard'},
+        ]
+      }
+    ]
+  },
+  s3: {
+    subjects: [
+      { id:'sv', title:'Basic Surveying (CEPC-302)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1 is pure intro. Levelling (Ch.3) is very formulaic. Theodolite = 30 marks — learn at least basics.',
+        chapters:[
+          {name:'Ch.1  Introduction & Chain Surveying', marks:2, diff:'easy'},
+          {name:'Ch.2  Compass Surveying', marks:4, diff:'medium'},
+          {name:'Ch.3  Levelling', marks:6, diff:'medium'},
+          {name:'Ch.4  Plane Table Surveying', marks:8, diff:'medium'},
+          {name:'Ch.6  Contouring & Area/Volume', marks:10, diff:'medium'},
+          {name:'Ch.5  Theodolite Surveying', marks:30, diff:'hard'},
+        ]
+      },
+      { id:'sm1', title:'Structural Mechanics-I (CEPC-303)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1 & Ch.2 together = 23 marks — nearly passing on their own with straightforward formulas.',
+        chapters:[
+          {name:'Ch.1  Simple Stresses & Strains', marks:14, diff:'medium'},
+          {name:'Ch.2  Bending Moment & Shear Force', marks:9, diff:'medium'},
+          {name:'Ch.4  Torsion', marks:12, diff:'medium'},
+          {name:'Ch.3  Theory of Bending', marks:25, diff:'hard'},
+        ]
+      },
+      { id:'wr', title:'Water Resource Engineering (CEPC-306)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'No single hard chapter! Consistent study across chapters easily clears pass. Ch.1 = pure theory.',
+        chapters:[
+          {name:'Ch.1  Hydrology & Water Resources', marks:6, diff:'easy'},
+          {name:'Ch.2  Precipitation & Runoff', marks:6, diff:'medium'},
+          {name:'Ch.6  Groundwater & Tube Wells', marks:6, diff:'medium'},
+          {name:'Ch.3  Dams & Reservoirs', marks:9, diff:'medium'},
+          {name:'Ch.4  Irrigation Systems', marks:9, diff:'medium'},
+          {name:'Ch.5  Canal Design & Weirs', marks:9, diff:'medium'},
+        ]
+      }
+    ]
+  },
+  s4: {
+    subjects: [
+      { id:'hyd', title:'Hydraulics (CEPC-401)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1 + Ch.6 = 13 marks, zero numericals. Pure reading!',
+        chapters:[
+          {name:'Ch.1  Introduction (no numericals)', marks:6, diff:'easy'},
+          {name:'Ch.6  Hydraulic Pumps (no numericals)', marks:7, diff:'star'},
+          {name:'Ch.2  Pressure & Hydrostatics', marks:10, diff:'medium'},
+          {name:'Ch.5  Open Channel Flow', marks:10, diff:'medium'},
+          {name:'Ch.3  Bernoulli\'s / Flow of Fluid', marks:14, diff:'medium'},
+          {name:'Ch.4  Flow through Pipes', marks:13, diff:'hard'},
+        ]
+      },
+      { id:'est', title:'Estimating, Costing & Valuation (CEPC-402)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1+2+6 = 20 marks of pure definitions. Add Rate Analysis → easy pass without bar bending!',
+        chapters:[
+          {name:'Ch.1  Fundamentals of Estimating', marks:5, diff:'easy'},
+          {name:'Ch.2  Approximate Estimates', marks:5, diff:'easy'},
+          {name:'Ch.6  Valuation', marks:10, diff:'star'},
+          {name:'Ch.5  Rate Analysis', marks:11, diff:'medium'},
+          {name:'Ch.4  Earthwork & Civil Works', marks:14, diff:'medium'},
+          {name:'Ch.3  Detailed Estimate (RCC)', marks:15, diff:'hard'},
+        ]
+      },
+      { id:'sm2', title:'Structural Mechanics-II (CEPC-403)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.5 + Ch.6 = 20 marks — nearly passing on just two chapters. No derivations needed!',
+        chapters:[
+          {name:'Ch.5  Dams & Retaining Walls', marks:10, diff:'star'},
+          {name:'Ch.6  Analysis of Truss', marks:10, diff:'star'},
+          {name:'Ch.2  Shear Stress in Beams', marks:8, diff:'medium'},
+          {name:'Ch.3  Slopes & Deflection', marks:10, diff:'medium'},
+          {name:'Ch.4  Columns & Struts', marks:10, diff:'medium'},
+          {name:'Ch.1  Fixed & Continuous Beam', marks:12, diff:'hard'},
+        ]
+      }
+    ]
+  },
+  s5: {
+    subjects: [
+      { id:'ic', title:'Indian Constitution (AU-501)', sub:'ESE 100 · Pass 40 | Audit Course', pass:40, total:100,
+        tip:'100% theory, zero numericals. Units I & II alone = 45 marks. Read once and score. Free marks!',
+        chapters:[
+          {name:'Unit I  Introduction & Preamble', marks:25, diff:'easy'},
+          {name:'Unit II  Fundamental Rights', marks:20, diff:'easy'},
+          {name:'Unit III  Parliament & Executive', marks:11, diff:'medium'},
+          {name:'Unit IV  Judiciary', marks:11, diff:'medium'},
+          {name:'Unit V  Federalism & Amendment', marks:7, diff:'medium'},
+          {name:'Unit VI  Other Important Provisions', marks:7, diff:'medium'},
+        ]
+      },
+      { id:'geo', title:'Geotechnical Engineering (CEPC-501)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'No hard chapter! Focus on phase relationships and Atterberg limits in Ch.2 — it carries most marks.',
+        chapters:[
+          {name:'Ch.1  Overview of Geology & Geotech', marks:5, diff:'easy'},
+          {name:'Ch.4  Bearing Capacity of Soil', marks:11, diff:'medium'},
+          {name:'Ch.5  Compaction & Stabilization', marks:11, diff:'medium'},
+          {name:'Ch.3  Permeability & Shear Strength', marks:14, diff:'medium'},
+          {name:'Ch.2  Physical & Index Properties', marks:19, diff:'medium'},
+        ]
+      },
+      { id:'rcc', title:'Design of RCC (CEPC-502)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1 = IS code concepts, easy 5 marks. Ch.3–6 are formula-driven but more manageable than beams.',
+        chapters:[
+          {name:'Ch.1  Limit State Design Concepts', marks:5, diff:'easy'},
+          {name:'Ch.3  Design of Slabs', marks:7, diff:'medium'},
+          {name:'Ch.4  Shear, Bond & Dev. Length', marks:10, diff:'medium'},
+          {name:'Ch.5  Design of Columns', marks:10, diff:'medium'},
+          {name:'Ch.6  Design of Footings', marks:10, diff:'medium'},
+          {name:'Ch.2  Design of Beams', marks:18, diff:'hard'},
+        ]
+      },
+      { id:'env', title:'Environmental Engineering (CEPC-503)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Unit 3 = easy 4 marks on pollution basics. Units 1 & 2 are large but mostly descriptive.',
+        chapters:[
+          {name:'Unit 3  Air & Noise Pollution', marks:4, diff:'easy'},
+          {name:'Unit 2  Sewerage & Sanitation', marks:25, diff:'medium'},
+          {name:'Unit 1  Water Supply Engineering', marks:27, diff:'medium'},
+        ]
+      },
+      { id:'te', title:'Transportation Engineering (CEPC-504)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Ch.1 = pure intro, easy 7 marks. Railways + Highways = 38 marks — mostly descriptive.',
+        chapters:[
+          {name:'Ch.1  Introduction & Modes of Transport', marks:7, diff:'easy'},
+          {name:'Ch.4  Tunnelling — Definition & Types', marks:8, diff:'medium'},
+          {name:'Ch.2  Railway Engineering', marks:18, diff:'medium'},
+          {name:'Ch.3  Highway Engineering', marks:20, diff:'medium'},
+          {name:'Ch.5  Tunnelling — Methods & Constr.', marks:7, diff:'hard'},
+        ]
+      },
+      { id:'te2', title:'Transportation Engineering-II (CEPE-501 Elective)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'No hard chapter! All medium — best elective for consistent scoring. Spread study evenly.',
+        chapters:[
+          {name:'Ch.1  Traffic Engineering Basics', marks:10, diff:'star'},
+          {name:'Ch.5  Airport Engineering', marks:7, diff:'medium'},
+          {name:'Ch.6  Harbour & Waterway Engineering', marks:8, diff:'medium'},
+          {name:'Ch.2  Road Materials & Pavement', marks:10, diff:'medium'},
+          {name:'Ch.4  Bituminous Construction', marks:10, diff:'medium'},
+          {name:'Ch.3  Highway Drainage', marks:15, diff:'medium'},
+        ]
+      },
+      { id:'gb', title:'Green Building & Energy Conservation (CEOE-503)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+        tip:'Best open elective — mostly definitions, case studies, zero numericals. Ch.1+2 = 20 marks of pure reading!',
+        chapters:[
+          {name:'Ch.1  Introduction to Green Building', marks:8, diff:'easy'},
+          {name:'Ch.2  Rating Systems (LEED/GRIHA)', marks:12, diff:'star'},
+          {name:'Ch.6  Construction Materials & Sustainability', marks:8, diff:'medium'},
+          {name:'Ch.4  Water & Waste Management', marks:10, diff:'medium'},
+          {name:'Ch.5  Renewable Energy Systems', marks:10, diff:'medium'},
+          {name:'Ch.3  Energy Efficient Building Design', marks:12, diff:'medium'},
+        ]
+      }
+    ]
+  }
+};
+
+const DIFF_COLORS = { easy:'#1D9E75', star:'#7F77DD', medium:'#BA7517', hard:'#E24B4A' };
+const DIFF_LABELS = { easy:'Easy', star:'★ Best ROI', medium:'Medium', hard:'Hard' };
+const state = {}; // state[subjectId][chapterIndex] = true/false
+
+function getDoneMarks(subj) {
+  let done = 0;
+  (subj.chapters || []).forEach((ch, i) => {
+    if (state[subj.id] && state[subj.id][i]) done += ch.marks;
+  });
+  return done;
+}
+
+function updateSubject(subj) {
+  const done = getDoneMarks(subj);
+  const pct = done / subj.total;
+  const passPct = subj.pass / subj.total;
+  const passed = done >= subj.pass;
+
+  // Update score badge
+  const badge = document.getElementById('badge-' + subj.id);
+  if (badge) {
+    badge.textContent = `${done} / ${subj.total} pts ${passed ? '✓ PASSED!' : `(need ${subj.pass - done} more)`}`;
+    badge.className = 'score-badge ' + (passed ? 'score-pass' : 'score-fail');
+  }
+
+  // Update progress bar
+  const prog = document.getElementById('prog-' + subj.id);
+  if (prog) prog.style.width = Math.min(100, pct * 100) + '%';
+
+  // Update all pass lines in this subject
+  document.querySelectorAll(`.pass-line-${subj.id}`).forEach(line => {
+    const lineLabel = line.querySelector('.pass-line-label');
+    if (passed) {
+      line.style.background = '#1D9E75';
+      line.style.left = (pct * 100).toFixed(1) + '%';
+      if (lineLabel) { lineLabel.textContent = `Done: ${done}`; lineLabel.style.color = '#1D9E75'; }
+    } else {
+      line.style.background = '#E24B4A';
+      line.style.left = (passPct * 100).toFixed(1) + '%';
+      if (lineLabel) { lineLabel.textContent = `Need ${subj.pass}`; lineLabel.style.color = '#E24B4A'; }
+    }
+  });
+
+  // Update tip
+  const tip = document.getElementById('tip-' + subj.id);
+  if (tip) {
+    if (passed) {
+      tip.className = 'tip-row tip-pass';
+      tip.textContent = `🎉 You've covered ${done} marks — enough to PASS! Keep going for a better score.`;
+    } else {
+      tip.className = 'tip-row tip-green';
+      tip.textContent = `💡 ${subj.tip}`;
+    }
+  }
+}
+
+function toggleChapter(subjId, idx, subj) {
+  if (!state[subjId]) state[subjId] = {};
+  state[subjId][idx] = !state[subjId][idx];
+  const row = document.getElementById(`row-${subjId}-${idx}`);
+  const check = document.getElementById(`chk-${subjId}-${idx}`);
+  if (row) row.classList.toggle('done', !!state[subjId][idx]);
+  if (check) check.classList.toggle('checked', !!state[subjId][idx]);
+  if (check) check.textContent = state[subjId][idx] ? '✓' : '';
+  updateSubject(subj);
+}
+
+function buildSubject(subj) {
+  if (!state[subj.id]) state[subj.id] = {};
+  const div = document.createElement('div');
+  div.className = 'subject-block';
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.className = 'subject-header';
+  hdr.innerHTML = `
+    <div>
+      <div class="subject-title">${subj.title}</div>
+      <div class="subject-sub">${subj.sub}</div>
+    </div>
+    <span class="score-badge score-fail" id="badge-${subj.id}">0 / ${subj.total} pts (need ${subj.pass} more)</span>
+  `;
+  div.appendChild(hdr);
+
+  // Progress bar
+  const pbWrap = document.createElement('div');
+  pbWrap.className = 'progress-bar-wrap';
+  pbWrap.innerHTML = `<div class="progress-bar-fill" id="prog-${subj.id}" style="width:0%"></div>`;
+  div.appendChild(pbWrap);
+
+  // Chart area
+  const chart = document.createElement('div');
+  chart.className = 'chart-area';
+
+  const diffOrder = {easy:0, star:0, medium:1, hard:2};
+  let lastLevel = -1;
+
+  subj.chapters.forEach((ch, i) => {
+    const lv = diffOrder[ch.diff] ?? 1;
+    if (lastLevel >= 0 && lv > lastLevel) {
+      const divRow = document.createElement('div');
+      divRow.className = 'divider-row';
+      divRow.innerHTML = `<div class="divider-line"></div><div class="divider-lbl">↓ ${lv===1?'Medium':'Hard'}</div><div class="divider-line"></div>`;
+      chart.appendChild(divRow);
+    }
+    lastLevel = Math.max(lastLevel, lv);
+
+    const bc = DIFF_COLORS[ch.diff] || '#BA7517';
+    const pct = (ch.marks / subj.total * 100).toFixed(1);
+    const passPct = (subj.pass / subj.total * 100).toFixed(1);
+
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.id = `row-${subj.id}-${i}`;
+    row.onclick = () => toggleChapter(subj.id, i, subj);
+
+    row.innerHTML = `
+      <div class="ch-check" id="chk-${subj.id}-${i}"></div>
+      <div class="ch-label">${ch.name}</div>
+      <div class="bar-outer" style="position:relative;overflow:visible;">
+        <div class="bar-fill" style="width:${pct}%;background:${bc};"></div>
+        <div class="pass-line pass-line-${subj.id}" style="left:${passPct}%;background:#E24B4A;">
+          <div class="pass-line-label" style="color:#E24B4A;">Need ${subj.pass}</div>
+        </div>
+      </div>
+      <span class="bar-val">${ch.marks}</span>
+      <span class="diff-tag ${ch.diff}">${DIFF_LABELS[ch.diff]}</span>
+    `;
+    chart.appendChild(row);
+  });
+
+  div.appendChild(chart);
+
+  // Footer
+  const foot = document.createElement('div');
+  foot.className = 'footer-row';
+  foot.innerHTML = `<span>Total: <b>${subj.total} marks</b></span><span>Pass: <b>${subj.pass}</b></span><span style="color:var(--color-text-tertiary);font-size:10px;">Tap chapters to mark done ↑</span>`;
+  div.appendChild(foot);
+
+  // Tip
+  const tip = document.createElement('div');
+  tip.className = 'tip-row tip-green';
+  tip.id = 'tip-' + subj.id;
+  tip.textContent = `💡 ${subj.tip}`;
+  div.appendChild(tip);
+
+  return div;
+}
+
+function buildSem(semKey) {
+  const semData = DATA[semKey];
+  const sec = document.createElement('div');
+  sec.className = 'sem-section';
+  sec.id = 'sec-' + semKey;
+  semData.subjects.forEach(subj => sec.appendChild(buildSubject(subj)));
+  return sec;
+}
+
+const container = document.getElementById('sem-container');
+['s2','s3','s4','s5'].forEach(key => {
+  const sec = buildSem(key);
+  if (key === 's2') sec.classList.add('active');
+  container.appendChild(sec);
+});
+
+function showSem(sem, el) {
+  document.querySelectorAll('.sem-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sem-tab').forEach(t => {
+    t.classList.remove('active','s2','s3','s4','s5');
+    const base = [...t.classList].find(c => c.endsWith('i'));
+    if(base) { t.className = 'sem-tab ' + base; }
+  });
+  document.getElementById('sec-' + sem).classList.add('active');
+  el.classList.add('active');
+  el.classList.remove('s2i','s3i','s4i','s5i');
+  el.classList.add(sem);
+}
+</script>
