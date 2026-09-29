@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Civil Engineering Study Tracker</title>
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f5f5f2; --text: #1a1a1a; --text2: #666660;
+  --border: #e0ddd5; --radius: 10px;
+  --green-dark: #27500A; --green-mid: #1D9E75; --green-light: #EAF3DE;
+  --purple-mid: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+  --amber-mid: #BA7517; --amber-light: #FAEEDA; --amber-dark: #633806;
+  --red-mid: #E24B4A; --red-light: #FCEBEB; --red-dark: #791F1F;
+  --s2: #1B4F72; --s3: #1A5276; --s4: #145A32; --s5: #512E5F;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18; --bg2: #242420; --text: #e8e5dc; --text2: #9a9690;
+    --border: #3a3830;
+    --green-light: #1a3306; --green-dark: #b8d98a;
+    --purple-light: #1e1b40; --purple-dark: #b0acf0;
+    --amber-light: #3a1f04; --amber-dark: #f5c07a;
+    --red-light: #3a0f0f; --red-dark: #f5a0a0;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0); }
+
+.app { max-width: 700px; margin: 0 auto; padding: 16px 12px 40px; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+.subtitle { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+
+/* Save status */
+.save-status { font-size: 11px; color: var(--text2); padding: 3px 8px; border-radius: 20px; background: var(--bg2); display: inline-block; margin-bottom: 10px; transition: all 0.3s; }
+.save-status.saving { color: var(--amber-mid); }
+.save-status.saved  { color: var(--green-mid); }
+.save-status.error  { color: var(--red-mid); }
+
+/* Tabs */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.tab { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; background: var(--bg2); color: var(--text2); }
+.tab.active { color: #fff; }
+.tab[data-sem="s2"].active { background: var(--s2); }
+.tab[data-sem="s3"].active { background: var(--s3); }
+.tab[data-sem="s4"].active { background: var(--s4); }
+.tab[data-sem="s5"].active { background: var(--s5); }
+.tab[data-sem="s2"] { border-color: var(--s2); }
+.tab[data-sem="s3"] { border-color: var(--s3); }
+.tab[data-sem="s4"] { border-color: var(--s4); }
+.tab[data-sem="s5"] { border-color: var(--s5); }
+
+/* Legend */
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px; color: var(--text2); align-items: center; }
+.leg { display: flex; align-items: center; gap: 4px; }
+.leg-dot { width: 9px; height: 9px; border-radius: 2px; }
+.hint { font-style: italic; font-size: 10px; }
+
+/* Section */
+.sem-section { display: none; }
+.sem-section.active { display: block; }
+
+/* Subject card */
+.subject-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; overflow: hidden; }
+.subj-header { padding: 10px 12px; background: var(--bg2); display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.subj-title { font-size: 14px; font-weight: 600; }
+.subj-sub { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.score-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; transition: all 0.3s; }
+.badge-fail { background: var(--red-light); color: var(--red-dark); }
+.badge-pass { background: var(--green-light); color: var(--green-dark); }
+
+/* Progress strip */
+.prog-wrap { height: 4px; background: var(--bg2); }
+.prog-fill { height: 100%; background: var(--green-mid); border-radius: 0 2px 2px 0; transition: width 0.4s ease; }
+
+/* Chart */
+.chart { padding: 10px 10px 6px; }
+.divider { display: flex; align-items: center; gap: 6px; margin: 4px 0 4px 182px; }
+.div-line { flex: 1; border-top: 1px dashed var(--border); }
+.div-lbl { font-size: 9px; color: var(--text2); font-weight: 600; white-space: nowrap; }
+
+.bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; cursor: pointer; border-radius: 6px; padding: 3px 4px; transition: background 0.1s; user-select: none; }
+.bar-row:hover { background: var(--bg2); }
+.bar-row:active { opacity: 0.8; }
+
+.ch-check { width: 17px; height: 17px; min-width: 17px; border-radius: 4px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; transition: all 0.15s; }
+.ch-check.checked { background: var(--green-mid); border-color: var(--green-mid); color: #fff; }
+
+.ch-label { font-size: 10.5px; color: var(--text2); width: 160px; min-width: 160px; text-align: right; line-height: 1.3; transition: all 0.2s; }
+.bar-row.done .ch-label { color: var(--text); font-weight: 600; }
+
+.bar-outer { flex: 1; height: 20px; background: var(--bg2); border-radius: 5px; position: relative; overflow: visible; }
+.bar-fill { height: 100%; border-radius: 5px; transition: opacity 0.2s; }
+.bar-row:not(.done) .bar-fill { opacity: 0.3; }
+.bar-row.done .bar-fill { opacity: 1; }
+
+/* Pass line */
+.pline { position: absolute; top: -4px; bottom: -4px; width: 2.5px; border-radius: 2px; z-index: 10; pointer-events: none; transition: left 0.5s cubic-bezier(0.34,1.56,0.64,1), background 0.4s; }
+.pline-lbl { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 700; white-space: nowrap; padding: 1px 3px; border-radius: 3px; background: var(--bg); transition: color 0.4s; }
+
+.bar-val { font-size: 11px; font-weight: 600; min-width: 20px; text-align: center; }
+.diff-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 20px; white-space: nowrap; min-width: 62px; text-align: center; }
+.easy   { background: var(--green-light);  color: var(--green-dark);  }
+.star   { background: var(--purple-light); color: var(--purple-dark); }
+.medium { background: var(--amber-light);  color: var(--amber-dark);  }
+.hard   { background: var(--red-light);    color: var(--red-dark);    }
+
+.tip { padding: 7px 10px; font-size: 10.5px; font-weight: 500; border-top: 1px solid var(--border); transition: all 0.3s; }
+.tip-default { background: var(--green-light); color: var(--green-dark); }
+.tip-done    { background: #d4edda; color: #155724; }
+@media (prefers-color-scheme: dark) { .tip-done { background: #0f3320; color: #75d8a0; } }
+
+.loading { text-align: center; padding: 40px; color: var(--text2); font-size: 13px; }
+.group-label { font-size: 11px; font-weight: 700; color: var(--text); margin: 10px 0 5px 0; padding: 4px 8px; background: var(--bg2); border-radius: 6px; border-left: 3px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>📚 Civil Engineering Study Tracker</h1>
+  <p class="subtitle">SCTE Assam · 2nd to 5th Semester · Tap chapters to mark done</p>
+  <div class="save-status" id="saveStatus">⏳ Loading your progress...</div>
+
+  <div class="tabs">
+    <div class="tab active" data-sem="s2" onclick="showSem('s2',this)">2nd Sem</div>
+    <div class="tab" data-sem="s3" onclick="showSem('s3',this)">3rd Sem</div>
+    <div class="tab" data-sem="s4" onclick="showSem('s4',this)">4th Sem</div>
+    <div class="tab" data-sem="s5" onclick="showSem('s5',this)">5th Sem</div>
+  </div>
+
+  <div class="legend">
+    <span class="leg"><span class="leg-dot" style="background:#1D9E75"></span>Easy</span>
+    <span class="leg"><span class="leg-dot" style="background:#7F77DD"></span>★ Best ROI</span>
+    <span class="leg"><span class="leg-dot" style="background:#BA7517"></span>Medium</span>
+    <span class="leg"><span class="leg-dot" style="background:#E24B4A"></span>Hard</span>
+    <span class="hint">· Tap chapter → red line moves!</span>
+  </div>
+
+  <div id="container"><div class="loading">Loading...</div></div>
+</div>
+
+<script>
+const DATA = {
+  s2:[
+    { id:'m2', title:'Mathematics-II (BS-201)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'A1+A2+B = 15 marks of pure definitions! Add Continuity(3)+Function(4)+Limit(8) = 30 marks = PASS without touching Derivatives or Integration!',
+      chapters:[
+        {n:'A1 · 1.1  Circle — Eq. of circle, 3 pts, diameter', m:4, d:'easy'},
+        {n:'A1 · 1.2  Conic Section — Parabola, Ellipse, Hyperbola', m:2, d:'easy'},
+        {n:'A2 · 2.1  3D System — Co-ord, Distance, Section', m:1, d:'easy'},
+        {n:'A2 · 2.1  Direction Cosines, Ratios, Projection, Angle', m:3, d:'easy'},
+        {n:'B  · 3.1  Mean, Median, Mode (simple problems)', m:2, d:'star'},
+        {n:'B  · 3.1  Relation between Mean, Median & Mode', m:3, d:'star'},
+        {n:'C  · 4.3  Continuity of a Function (1+2)', m:3, d:'medium'},
+        {n:'C  · 4.1  Function — Definition, types, Domain/Range', m:4, d:'medium'},
+        {n:'C  · 4.2  Limit — Intervals, Neighbourhood, Theorems', m:8, d:'medium'},
+        {n:'C  · 4.4+4.5  Derivative & Applications (1+1+2+3+3+3)', m:13, d:'hard'},
+        {n:'D  · 5.5  Definite Integral (Fund. thm, limit of sum, properties, area)', m:9, d:'hard'},
+        {n:'D  · 5.1–5.4  Fund. Props, Substitution, By Parts, Partial Fraction', m:11, d:'hard'},
+      ]
+    }
+  ],
+  s3:[
+    { id:'sv', title:'Basic Surveying (CEPC-302)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1 is pure intro. Levelling (Ch.3) is very formulaic. Theodolite = 30 marks — learn at least basics.',
+      chapters:[
+        {n:'Ch.1  Introduction & Chain Surveying', m:2, d:'easy'},
+        {n:'Ch.2  Compass Surveying', m:4, d:'medium'},
+        {n:'Ch.3  Levelling', m:6, d:'medium'},
+        {n:'Ch.4  Plane Table Surveying', m:8, d:'medium'},
+        {n:'Ch.6  Contouring & Area/Volume', m:10, d:'medium'},
+        {n:'Ch.5  Theodolite Surveying', m:30, d:'hard'},
+      ]
+    },
+    { id:'sm1', title:'Structural Mechanics-I (CEPC-303)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1 & Ch.2 together = 23 marks — nearly passing on their own with straightforward formulas.',
+      chapters:[
+        {n:'Ch.1  Simple Stresses & Strains', m:14, d:'medium'},
+        {n:'Ch.2  Bending Moment & Shear Force', m:9, d:'medium'},
+        {n:'Ch.4  Torsion', m:12, d:'medium'},
+        {n:'Ch.3  Theory of Bending', m:25, d:'hard'},
+      ]
+    },
+    { id:'wr', title:'Water Resource Engineering (CEPC-306)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'No single hard chapter! Consistent study across chapters easily clears pass.',
+      chapters:[
+        {n:'Ch.1  Hydrology & Water Resources', m:6, d:'easy'},
+        {n:'Ch.2  Precipitation & Runoff', m:6, d:'medium'},
+        {n:'Ch.6  Groundwater & Tube Wells', m:6, d:'medium'},
+        {n:'Ch.3  Dams & Reservoirs', m:9, d:'medium'},
+        {n:'Ch.4  Irrigation Systems', m:9, d:'medium'},
+        {n:'Ch.5  Canal Design & Weirs', m:9, d:'medium'},
+      ]
+    }
+  ],
+  s4:[
+    { id:'hyd', title:'Hydraulics (CEPC-401)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1 + Ch.6 = 13 marks, zero numericals. Pure reading!',
+      chapters:[
+        {n:'Ch.1  Introduction (no numericals)', m:6, d:'easy'},
+        {n:'Ch.6  Hydraulic Pumps (no numericals)', m:7, d:'star'},
+        {n:'Ch.2  Pressure & Hydrostatics', m:10, d:'medium'},
+        {n:'Ch.5  Open Channel Flow', m:10, d:'medium'},
+        {n:"Ch.3  Bernoulli's / Flow of Fluid", m:14, d:'medium'},
+        {n:'Ch.4  Flow through Pipes', m:13, d:'hard'},
+      ]
+    },
+    { id:'est', title:'Estimating, Costing & Valuation (CEPC-402)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1+2+6 = 20 marks of pure definitions. Add Rate Analysis → easy pass without bar bending!',
+      chapters:[
+        {n:'Ch.1  Fundamentals of Estimating', m:5, d:'easy'},
+        {n:'Ch.2  Approximate Estimates', m:5, d:'easy'},
+        {n:'Ch.6  Valuation', m:10, d:'star'},
+        {n:'Ch.5  Rate Analysis', m:11, d:'medium'},
+        {n:'Ch.4  Earthwork & Civil Works', m:14, d:'medium'},
+        {n:'Ch.3  Detailed Estimate (RCC)', m:15, d:'hard'},
+      ]
+    },
+    { id:'sm2', title:'Structural Mechanics-II (CEPC-403)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.5 + Ch.6 = 20 marks — nearly passing on just two chapters. No derivations needed!',
+      chapters:[
+        {n:'Ch.5  Dams & Retaining Walls', m:10, d:'star'},
+        {n:'Ch.6  Analysis of Truss', m:10, d:'star'},
+        {n:'Ch.2  Shear Stress in Beams', m:8, d:'medium'},
+        {n:'Ch.3  Slopes & Deflection', m:10, d:'medium'},
+        {n:'Ch.4  Columns & Struts', m:10, d:'medium'},
+        {n:'Ch.1  Fixed & Continuous Beam', m:12, d:'hard'},
+      ]
+    }
+  ],
+  s5:[
+    { id:'ic', title:'Indian Constitution (AU-501)', sub:'ESE 100 · Pass 40 | Audit Course', pass:40, total:100,
+      tip:'100% theory. Units I & II alone = 45 marks. Read once and score. Free marks!',
+      chapters:[
+        {n:'Unit I  Introduction & Preamble', m:25, d:'easy'},
+        {n:'Unit II  Fundamental Rights', m:20, d:'easy'},
+        {n:'Unit III  Parliament & Executive', m:11, d:'medium'},
+        {n:'Unit IV  Judiciary', m:11, d:'medium'},
+        {n:'Unit V  Federalism & Amendment', m:7, d:'medium'},
+        {n:'Unit VI  Other Important Provisions', m:7, d:'medium'},
+      ]
+    },
+    { id:'geo', title:'Geotechnical Engineering (CEPC-501)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'No hard chapter! Focus on phase relationships and Atterberg limits in Ch.2.',
+      chapters:[
+        {n:'Ch.1  Overview of Geology & Geotech', m:5, d:'easy'},
+        {n:'Ch.4  Bearing Capacity of Soil', m:11, d:'medium'},
+        {n:'Ch.5  Compaction & Stabilization', m:11, d:'medium'},
+        {n:'Ch.3  Permeability & Shear Strength', m:14, d:'medium'},
+        {n:'Ch.2  Physical & Index Properties', m:19, d:'medium'},
+      ]
+    },
+    { id:'rcc', title:'Design of RCC (CEPC-502)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1 = IS code concepts, easy 5 marks. Ch.3–6 more manageable than beams.',
+      chapters:[
+        {n:'Ch.1  Limit State Design Concepts', m:5, d:'easy'},
+        {n:'Ch.3  Design of Slabs', m:7, d:'medium'},
+        {n:'Ch.4  Shear, Bond & Dev. Length', m:10, d:'medium'},
+        {n:'Ch.5  Design of Columns', m:10, d:'medium'},
+        {n:'Ch.6  Design of Footings', m:10, d:'medium'},
+        {n:'Ch.2  Design of Beams', m:18, d:'hard'},
+      ]
+    },
+    { id:'env', title:'Environmental Engineering (CEPC-503)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Unit 3 = easy 4 marks on pollution basics. Units 1 & 2 are large but mostly descriptive.',
+      chapters:[
+        {n:'Unit 3  Air & Noise Pollution', m:4, d:'easy'},
+        {n:'Unit 2  Sewerage & Sanitation', m:25, d:'medium'},
+        {n:'Unit 1  Water Supply Engineering', m:27, d:'medium'},
+      ]
+    },
+    { id:'te', title:'Transportation Engineering (CEPC-504)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Ch.1 = pure intro, easy 7 marks. Railways + Highways = 38 marks — mostly descriptive.',
+      chapters:[
+        {n:'Ch.1  Introduction & Modes of Transport', m:7, d:'easy'},
+        {n:'Ch.4  Tunnelling — Definition & Types', m:8, d:'medium'},
+        {n:'Ch.2  Railway Engineering', m:18, d:'medium'},
+        {n:'Ch.3  Highway Engineering', m:20, d:'medium'},
+        {n:'Ch.5  Tunnelling — Methods & Constr.', m:7, d:'hard'},
+      ]
+    },
+    { id:'te2', title:'Transportation Engineering-II (CEPE-501 Elective)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'No hard chapter! All medium — best elective for consistent scoring.',
+      chapters:[
+        {n:'Ch.1  Traffic Engineering Basics', m:10, d:'star'},
+        {n:'Ch.5  Airport Engineering', m:7, d:'medium'},
+        {n:'Ch.6  Harbour & Waterway Engineering', m:8, d:'medium'},
+        {n:'Ch.2  Road Materials & Pavement', m:10, d:'medium'},
+        {n:'Ch.4  Bituminous Construction', m:10, d:'medium'},
+        {n:'Ch.3  Highway Drainage', m:15, d:'medium'},
+      ]
+    },
+    { id:'gb', title:'Green Building & Energy Conservation (CEOE-503)', sub:'ESE 60 · Pass 24 | IA 40 · Pass 16', pass:24, total:60,
+      tip:'Best open elective — mostly definitions, case studies, zero numericals. Ch.1+2 = 20 marks of pure reading!',
+      chapters:[
+        {n:'Ch.1  Introduction to Green Building', m:8, d:'easy'},
+        {n:'Ch.2  Rating Systems (LEED/GRIHA)', m:12, d:'star'},
+        {n:'Ch.6  Construction Materials & Sustainability', m:8, d:'medium'},
+        {n:'Ch.4  Water & Waste Management', m:10, d:'medium'},
+        {n:'Ch.5  Renewable Energy Systems', m:10, d:'medium'},
+        {n:'Ch.3  Energy Efficient Building Design', m:12, d:'medium'},
+      ]
+    }
+  ]
+};
+
+const COLORS = {easy:'#1D9E75', star:'#7F77DD', medium:'#BA7517', hard:'#E24B4A'};
+const LABELS = {easy:'Easy', star:'★ Best ROI', medium:'Medium', hard:'Hard'};
+const DORDER = {easy:0, star:0, medium:1, hard:2};
+
+// State: { subjId: [bool, bool, ...] }
+let state = {};
+let saveTimer = null;
+let currentSem = 's2';
+
+// ── LocalStorage (fallback for GitHub hosting) ────────────────────────────
+const LS_KEY = 'civil_tracker_v1';
+
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveToLS(data) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function buildSubject(subj) {
+  const card = document.createElement('div');
+  card.className = 'subject-card';
+
+  // Header
+  card.innerHTML = `
+    <div class="subj-header">
+      <div>
+        <div class="subj-title">${subj.title}</div>
+        <div class="subj-sub">${subj.sub}</div>
+      </div>
+      <span class="score-badge badge-fail" id="badge-${subj.id}">0 / ${subj.total}</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog-${subj.id}" style="width:0%"></div></div>
+  `;
+
+  const chart = document.createElement('div');
+  chart.className = 'chart';
+  let lastLv = -1;
+  let lastGrp = null;
+
+  // Group label config for Math-II
+  const GRP_CFG = {
+    'A1 ·': {label:'📐 Group A1 · 2D Co-ordinate Geometry · 6 marks', color:'#1B4F72'},
+    'A2 ·': {label:'📦 Group A2 · 3D Co-ordinate Geometry · 4 marks', color:'#1A5276'},
+    'B  ·': {label:'📊 Group B · Statistics · 5 marks', color:'#145A32'},
+    'C  ·': {label:'🔢 Group C · Differential Calculus · 25 marks', color:'#512E5F'},
+    'D  ·': {label:'∫  Group D · Integration · 20 marks', color:'#7D4E00'},
+  };
+
+  subj.chapters.forEach((ch, i) => {
+    const lv = DORDER[ch.d] ?? 1;
+
+    // Check if this chapter belongs to a named group (Math-II style)
+    let grpKey = null;
+    for (const k of Object.keys(GRP_CFG)) { if (ch.n.startsWith(k)) { grpKey = k; break; } }
+
+    if (grpKey && grpKey !== lastGrp) {
+      lastGrp = grpKey;
+      lastLv = -1; // reset difficulty divider per group
+      const gl = document.createElement('div');
+      gl.className = 'group-label';
+      gl.style.borderLeftColor = GRP_CFG[grpKey].color;
+      gl.textContent = GRP_CFG[grpKey].label;
+      chart.appendChild(gl);
+    }
+
+    if (!grpKey && lastLv >= 0 && lv > lastLv) {
+      const dv = document.createElement('div');
+      dv.className = 'divider';
+      dv.innerHTML = `<div class="div-line"></div><div class="div-lbl">↓ ${lv===1?'Medium':'Hard'}</div><div class="div-line"></div>`;
+      chart.appendChild(dv);
+    }
+    lastLv = Math.max(lastLv, lv);
+
+    const bc = COLORS[ch.d];
+    const fillW = (ch.m / subj.total * 100).toFixed(1);
+    const passW = (subj.pass / subj.total * 100).toFixed(1);
+    const done = state[subj.id] && state[subj.id][i];
+
+    const row = document.createElement('div');
+    row.className = 'bar-row' + (done ? ' done' : '');
+    row.id = `row-${subj.id}-${i}`;
+    const displayName = grpKey ? ch.n.replace(grpKey, '').trim() : ch.n;
+    row.innerHTML = `
+      <div class="ch-check${done?' checked':''}" id="chk-${subj.id}-${i}">${done?'✓':''}</div>
+      <div class="ch-label">${displayName}</div>
+      <div class="bar-outer">
+        <div class="bar-fill" style="width:${fillW}%;background:${bc}"></div>
+        <div class="pline pline-${subj.id}" style="left:${passW}%;background:#E24B4A;">
+          <div class="pline-lbl" style="color:#E24B4A;">Need ${subj.pass}</div>
+        </div>
+      </div>
+      <span class="bar-val">${ch.m}</span>
+      <span class="diff-tag ${ch.d}">${LABELS[ch.d]}</span>
+    `;
+    row.onclick = () => toggle(subj, i);
+    chart.appendChild(row);
+  });
+
+  card.appendChild(chart);
+
+  const tip = document.createElement('div');
+  tip.className = 'tip tip-default';
+  tip.id = 'tip-' + subj.id;
+  tip.textContent = '💡 ' + subj.tip;
+  card.appendChild(tip);
+
+  return card;
+}
+
+function refreshSubject(subj) {
+  const marks = (state[subj.id] || []).reduce((s, v, i) => s + (v ? subj.chapters[i].m : 0), 0);
+  const passed = marks >= subj.pass;
+  const pct = marks / subj.total;
+  const passPct = subj.pass / subj.total;
+
+  const badge = document.getElementById('badge-' + subj.id);
+  if (badge) {
+    badge.textContent = passed ? `${marks} ✓ PASSED!` : `${marks} / ${subj.total} (need ${subj.pass - marks} more)`;
+    badge.className = 'score-badge ' + (passed ? 'badge-pass' : 'badge-fail');
+  }
+
+  const prog = document.getElementById('prog-' + subj.id);
+  if (prog) prog.style.width = Math.min(100, pct * 100) + '%';
+
+  document.querySelectorAll(`.pline-${subj.id}`).forEach(line => {
+    const lbl = line.querySelector('.pline-lbl');
+    if (passed) {
+      line.style.background = '#1D9E75';
+      line.style.left = (pct * 100).toFixed(1) + '%';
+      if (lbl) { lbl.textContent = `Done: ${marks}`; lbl.style.color = '#1D9E75'; }
+    } else {
+      line.style.background = '#E24B4A';
+      line.style.left = (passPct * 100).toFixed(1) + '%';
+      if (lbl) { lbl.textContent = `Need ${subj.pass}`; lbl.style.color = '#E24B4A'; }
+    }
+  });
+
+  const tip = document.getElementById('tip-' + subj.id);
+  if (tip) {
+    tip.className = 'tip ' + (passed ? 'tip-done' : 'tip-default');
+    tip.textContent = passed
+      ? `🎉 ${marks} marks covered — PASSED! Keep going for a better score.`
+      : `💡 ${subj.tip}`;
+  }
+}
+
+function toggle(subj, idx) {
+  if (!state[subj.id]) state[subj.id] = new Array(subj.chapters.length).fill(false);
+  state[subj.id][idx] = !state[subj.id][idx];
+
+  const row = document.getElementById(`row-${subj.id}-${idx}`);
+  const chk = document.getElementById(`chk-${subj.id}-${idx}`);
+  if (row) row.classList.toggle('done', state[subj.id][idx]);
+  if (chk) { chk.classList.toggle('checked', state[subj.id][idx]); chk.textContent = state[subj.id][idx] ? '✓' : ''; }
+
+  refreshSubject(subj);
+  scheduleSave();
+}
+
+function scheduleSave() {
+  const el = document.getElementById('saveStatus');
+  if (el) { el.textContent = '💾 Saving...'; el.className = 'save-status saving'; }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistSave, 600);
+}
+
+function persistSave() {
+  // Save to localStorage (works on GitHub Pages)
+  saveToLS(state);
+  const el = document.getElementById('saveStatus');
+  if (el) { el.textContent = '✅ Progress saved'; el.className = 'save-status saved'; }
+  setTimeout(() => { if (el) { el.textContent = '🟢 Auto-saving on'; el.className = 'save-status saved'; } }, 2000);
+}
+
+function buildAll(savedState) {
+  state = savedState || {};
+  const container = document.getElementById('container');
+  container.innerHTML = '';
+
+  ['s2','s3','s4','s5'].forEach(semKey => {
+    const sec = document.createElement('div');
+    sec.className = 'sem-section' + (semKey === 's2' ? ' active' : '');
+    sec.id = 'sec-' + semKey;
+    DATA[semKey].forEach(subj => {
+      // Init state arrays
+      if (!state[subj.id]) state[subj.id] = new Array(subj.chapters.length).fill(false);
+      sec.appendChild(buildSubject(subj));
+      refreshSubject(subj);
+    });
+    container.appendChild(sec);
+  });
+
+  const el = document.getElementById('saveStatus');
+  if (el) { el.textContent = '🟢 Auto-saving on'; el.className = 'save-status saved'; }
+}
+
+function showSem(sem, el) {
+  currentSem = sem;
+  document.querySelectorAll('.sem-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + sem).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = loadFromLS();
+  buildAll(saved);
+});
+</script>
+</body>
+</html>
